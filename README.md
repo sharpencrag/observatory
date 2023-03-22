@@ -68,10 +68,10 @@ def function_one():
 some_function.about_to_run.connect(start)
 some_function.completed.connect(stop)
 
->>> some_function()
-hello
-in some_function
-goodbye
+some_function()
+# output: hello
+# output: in some_function
+# output: goodbye
 ```
 
 ### Adding Context to Events
