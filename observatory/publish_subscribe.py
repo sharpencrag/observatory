@@ -7,7 +7,7 @@ from typing import Dict, Hashable, Optional
 
 from functools import lru_cache, wraps
 
-from observatory import core as events
+from observatory import events as events
 
 __all__ = ["event_broker", "EventBroker"]
 
@@ -15,11 +15,11 @@ __all__ = ["event_broker", "EventBroker"]
 def ancestors(child):
     """Helper utility to get a list of all ancestors of a given object."""
     parent = child.parent
-    ancestors = list()
+    ancestors_ = list()
     while parent is not None:
-        ancestors.append(parent)
+        ancestors_.append(parent)
         parent = parent.parent
-    return ancestors
+    return ancestors_
 
 
 @lru_cache

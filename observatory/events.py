@@ -6,7 +6,7 @@ import enum
 import itertools
 import traceback
 from collections import OrderedDict, defaultdict
-from collections.abc import Callable, MutableSet
+from collections.abc import MutableSet
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import (

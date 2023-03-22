@@ -1,5 +1,5 @@
 import unittest
-from observatory import core
+from observatory import events
 from observatory import data_types
 
 
@@ -11,8 +11,8 @@ class EventHookTests(unittest.TestCase):
     """
 
     def setUp(self):
-        self.event_hook = core.EventHook()
-        self.event_hook_two = core.EventHook()
+        self.event_hook = events.EventHook()
+        self.event_hook_two = events.EventHook()
         self.result = None
         self.result_two = None
 
@@ -82,7 +82,7 @@ class EventHookTests(unittest.TestCase):
 
     def test_event_hook_error(self):
         self.event_hook.connect(self._set_result)
-        with self.assertRaises(core.EventHookError):
+        with self.assertRaises(events.EventHookError):
             self.event_hook.emit(foo="bar")
 
     def test_no_event_hook_crosstalk(self):
@@ -129,7 +129,7 @@ class EventHookTests(unittest.TestCase):
         self.assertEqual(self.result, "method")
 
     def test_observes_decorator_function(self):
-        @core.observes(self.event_hook)
+        @events.observes(self.event_hook)
         def func():
             self.result = "function"
 
@@ -142,7 +142,7 @@ class TestEventHookAsClassAttribute(EventHookTests):
     """Ensures all the tests work when an event hook is a descriptor"""
 
     class AnotherClass:
-        event_hook = core.EventHook()
+        event_hook = events.EventHook()
 
     def setUp(self):
         self.result = None
@@ -260,7 +260,7 @@ class TestObservableDict(unittest.TestCase):
     def setUp(self):
         self.data = {"a": 1, "b": 2, "c": 3}
         self.result = None
-        self.results_obtained = core.EventHook()
+        self.results_obtained = events.EventHook()
         self.results_obtained.connect(self._set_result)
 
     def _set_result(self, *args):
@@ -332,41 +332,41 @@ class TestObservableDict(unittest.TestCase):
 
 class TestEventDecorator(unittest.TestCase):
     def test_event_decorated_function_returns_event(self):
-        @core.event()
+        @events.event()
         def _test():
             pass
 
-        self.assertIsInstance(_test, core.Event)
+        self.assertIsInstance(_test, events.Event)
 
     def test_event_decorated_method_returns_event(self):
         class EventTestClass:
-            @core.event()
+            @events.event()
             def _test(_):
                 pass
 
         instance = EventTestClass()
-        self.assertIsInstance(instance._test, core.Event)
+        self.assertIsInstance(instance._test, events.Event)
 
     def test_event_decorated_staticmethod_returns_event(self):
         class EventTestClass:
-            @core.static_event()
+            @events.static_event()
             def _test():
                 pass
 
         instance = EventTestClass()
-        self.assertIsInstance(instance._test, core.Event)
+        self.assertIsInstance(instance._test, events.Event)
 
     def test_event_decorated_classmethod_returns_event(self):
         class EventTestClass:
-            @core.class_event()
+            @events.class_event()
             def _test(cls):
                 pass
 
         instance = EventTestClass()
-        self.assertIsInstance(instance._test, core.Event)
+        self.assertIsInstance(instance._test, events.Event)
 
     def test_event_decorator_attr_passthrough(self):
-        @core.event()
+        @events.event()
         def _test():
             """test docstring"""
 
@@ -376,7 +376,7 @@ class TestEventDecorator(unittest.TestCase):
     def test_decorated_action_actually_runs(self):
         has_run = {"status": False}
 
-        @core.event()
+        @events.event()
         def _test():
             has_run["status"] = True
 
@@ -388,7 +388,7 @@ class TestEventDecorator(unittest.TestCase):
         has_run = {"status": False}
 
         class X:
-            @core.event()
+            @events.event()
             def _test(self_):
                 has_run["status"] = True
                 self.assertIsInstance(self_, X)
@@ -402,7 +402,7 @@ class TestEventDecorator(unittest.TestCase):
         has_run = {"status": False}
 
         class X:
-            @core.class_event()
+            @events.class_event()
             def _test(cls):
                 has_run["status"] = True
                 self.assertIs(cls, X)
@@ -416,7 +416,7 @@ class TestEventDecorator(unittest.TestCase):
         has_run = {"status": False}
 
         class X:
-            @core.static_event()
+            @events.static_event()
             def _test(*args):
                 has_run["status"] = True
                 self.assertEqual(len(args), 0)
@@ -447,7 +447,7 @@ class TestEvents(unittest.TestCase):
         def action():
             pass
 
-        event = core.Event(action)
+        event = events.Event(action)
         event.about_to_run.connect(about_to_run_cbk)
         event.completed.connect(completed_cbk)
         event.crashed.connect(crashed_cbk)
@@ -475,7 +475,7 @@ class TestEvents(unittest.TestCase):
         def action():
             raise Exception()
 
-        event = core.Event(action)
+        event = events.Event(action)
         event.about_to_run.connect(about_to_run_cbk)
         event.completed.connect(completed_cbk)
         event.crashed.connect(crashed_cbk)
@@ -511,7 +511,7 @@ class TestEvents(unittest.TestCase):
 
         instance = TestClass()
         self.assertFalse(function_run)
-        event = core.Event(instance.action)
+        event = events.Event(instance.action)
         event.about_to_run.connect(about_to_run_cbk)
         event.completed.connect(completed_cbk)
         event.crashed.connect(crashed_cbk)
@@ -525,25 +525,25 @@ class TestEvents(unittest.TestCase):
 
 class TestGlobalCallbackFunctions(unittest.TestCase):
     def test_add_global_event_callback(self):
-        status = core.EventStatus.ABOUT_TO_RUN
+        status = events.EventStatus.ABOUT_TO_RUN
 
         def cbk(_):
             pass
 
-        core.add_global_event_callback(status, cbk)
-        self.assertIn(cbk, core._global_event_callbacks[status])
+        events.add_global_event_callback(status, cbk)
+        self.assertIn(cbk, events._global_event_callbacks[status])
 
     def test_clear_global_event_callbacks(self):
-        status = core.EventStatus.ABOUT_TO_RUN
+        status = events.EventStatus.ABOUT_TO_RUN
 
         def cbk(_):
             pass
 
-        core.add_global_event_callback(status, cbk)
-        self.assertIn(cbk, core._global_event_callbacks[status])
+        events.add_global_event_callback(status, cbk)
+        self.assertIn(cbk, events._global_event_callbacks[status])
 
-        core.clear_global_event_callbacks(status)
-        self.assertNotIn(cbk, core._global_event_callbacks[status])
+        events.clear_global_event_callbacks(status)
+        self.assertNotIn(cbk, events._global_event_callbacks[status])
 
 
 class TestGlobalEventCallbacks(unittest.TestCase):
@@ -580,26 +580,26 @@ class TestGlobalEventCallbacks(unittest.TestCase):
         def progress_updated(data):
             results.append("progress_{}".format(data.item))
 
-        @core.event()
+        @events.event()
         def a_event():
             for _ in a_event.track(["a_one", "a_two", "a_three"]):
                 pass
 
-        @core.event()
+        @events.event()
         def b_event():
             for _ in b_event.track(["b_one", "b_two", "b_three"]):
                 pass
 
-        core.add_global_event_callback(core.EventStatus.ABOUT_TO_RUN, about_to_run)
+        events.add_global_event_callback(events.EventStatus.ABOUT_TO_RUN, about_to_run)
 
-        core.add_global_event_callback(core.EventStatus.COMPLETED, completed)
+        events.add_global_event_callback(events.EventStatus.COMPLETED, completed)
 
-        core.add_global_event_callback(core.EventStatus.CRASHED, crashed)
+        events.add_global_event_callback(events.EventStatus.CRASHED, crashed)
 
-        core.add_global_event_callback(core.EventStatus.EXITED, exited)
+        events.add_global_event_callback(events.EventStatus.EXITED, exited)
 
-        core.add_global_event_callback(
-            core.EventStatus.PROGRESS_UPDATED, progress_updated
+        events.add_global_event_callback(
+            events.EventStatus.PROGRESS_UPDATED, progress_updated
         )
 
         self.assertFalse(results)
@@ -627,33 +627,33 @@ class TestGlobalEventCallbacks(unittest.TestCase):
             "exited_b_event",
         ]
 
-        @core.event()
+        @events.event()
         def a_event():
             for _ in a_event.track(["a_one", "a_two", "a_three"]):
                 pass
 
-        @core.event()
+        @events.event()
         def b_event():
             for _ in b_event.track(["b_one", "b_two", "b_three"]):
                 pass
 
-        @core.observes(core.EventStatus.ABOUT_TO_RUN)
+        @events.observes(events.EventStatus.ABOUT_TO_RUN)
         def about_to_run(data):
             results.append("about_to_run_{}".format(data.name))
 
-        @core.observes(core.EventStatus.COMPLETED)
+        @events.observes(events.EventStatus.COMPLETED)
         def completed(data):
             results.append("completed_{}".format(data.name))
 
-        @core.observes(core.EventStatus.CRASHED)
+        @events.observes(events.EventStatus.CRASHED)
         def crashed(data):
             results.append("crashed_{}".format(data.name))
 
-        @core.observes(core.EventStatus.EXITED)
+        @events.observes(events.EventStatus.EXITED)
         def exited(data):
             results.append("exited_{}".format(data.name))
 
-        @core.observes(core.EventStatus.PROGRESS_UPDATED)
+        @events.observes(events.EventStatus.PROGRESS_UPDATED)
         def progress_updated(data):
             results.append("progress_{}".format(data.item))
 
@@ -669,7 +669,7 @@ class TestGlobalEventCallbacks(unittest.TestCase):
         expected = ["event run", "after"]
         expected_tag = ("key", "value")
 
-        @core.event()
+        @events.event()
         def an_event():
             results.append("event run")
             an_event["key"] = "value"
@@ -696,7 +696,7 @@ class TestGlobalEventCallbacks(unittest.TestCase):
 
         counter = count()
 
-        @core.event()
+        @events.event()
         def an_event():
             call_count = counter.__next__()
             call_count_str = str(call_count)
@@ -726,7 +726,7 @@ class TestGlobalEventCallbacks(unittest.TestCase):
         expected_tag = ("key", "value")
 
         class EventClass:
-            @core.event()
+            @events.event()
             def an_event(self):
                 results.append("event run")
                 self.an_event["key"] = "value"
@@ -755,7 +755,7 @@ class TestGlobalEventCallbacks(unittest.TestCase):
         counter = count()
 
         class EventClass:
-            @core.event()
+            @events.event()
             def an_event(self):
                 call_count = counter.__next__()
                 call_count_str = str(call_count)
@@ -787,12 +787,12 @@ class TestEventProgress(unittest.TestCase):
         expected = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
         def handle_progress_update(progress_data):
-            self.assertIsInstance(progress_data.event, core.Event)
+            self.assertIsInstance(progress_data.event, events.Event)
             self.assertIsInstance(progress_data.item, int)
             self.assertEqual(progress_data.name, "test")
             results.append(progress_data.completion)
 
-        @core.event()
+        @events.event()
         def an_event():
             data = list(range(10))
             for _ in an_event.track(data, name="test"):
@@ -810,13 +810,13 @@ class TestEventProgress(unittest.TestCase):
         expected = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
         def handle_progress_update(progress_data):
-            self.assertIsInstance(progress_data.event, core.Event)
+            self.assertIsInstance(progress_data.event, events.Event)
             self.assertIsInstance(progress_data.item, int)
             self.assertEqual(progress_data.name, "test")
             results.append(progress_data.completion)
 
         class EventClass:
-            @core.event()
+            @events.event()
             def an_event(self):
                 data = list(range(10))
                 for _ in self.an_event.track(data, name="test"):
