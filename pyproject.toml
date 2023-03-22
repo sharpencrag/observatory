@@ -7,7 +7,7 @@ dev = [
 
 [project]
 name = "observatory"
-version = "0.2.0"
+version = "1.0.1"
 description = "Observable, event-driven python!"
 authors = [
     { name = "Ed Whetstone" },
@@ -31,7 +31,7 @@ classifiers = [
 
 [project.urls]
 homepage = "https://github.com/sharpencrag/observatory"
-documentation = "https://github.com/sharpencrag/observatory"
+documentation = "https://github.com/sharpencrag/observatory#readme"
 repository = "https://github.com/sharpencrag/observatory"
 
 [project.optional-dependencies]
