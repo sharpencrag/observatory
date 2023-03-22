@@ -104,7 +104,7 @@ def my_event(asset_name):
 
 ## Observable Types
 
-The provided observable data types allow us to connect callbacks to changes to our data. 
+The provided observable data types allow us to connect callbacks to changes to our data.
 
 ### Assignment
 Not strictly a data type itself, the `ObservableAssignment` object emits an event hook every time the given attribute name is assigned a new value.
@@ -144,46 +144,34 @@ x.append(5)
 "Publish-subscribe" is a special case of the observer
 pattern, where subjects and observers are mediated by a third object.
 
-We're using an `EventBroker` as our middle-man object. Each `EventBroker` is
-assigned a unique id and can be obtained reliably by both publisher and
-subscriber objects.
+An Event Broker is a middle-man object between events and their callbacks,
+allowing event-generating objects (publishers) and callbacks (subscribers)
+to never know about each-other's existence.  A subscriber can subscribe to
+an event broker that has no publishers, and a publisher can publish to an
+event broker with no subscribers.
 
-In order to make event filtering easier, event brokers can be organized into a hierarchy.
+In order to make event filtering easier, event brokers can be organized into a
+hierarchy:
 
-For example, let's say you have two news services. One writes political
-news stories, the other writes sports stories. They send their data to a
-broker, who passes on the data to subscribers. A subscriber might want
-just political news, just sports news, or all news:
-  
 ```python
-# the broker for all news items
-news_broker = get_event_broker("news")
-
-# the broker just for sports stories
-sports_broker = news_broker.child("sports")
-
-# the broker just for politics stories
-politics_broker = news_broker.child("politics")
-
-# a subscriber that displays only sports news
-sports_feed = MySportsFeed()
-sports_feed.subscribe(sports_broker)
-
-# a subscriber that displays all news stories
-news_feed = MyNewsFeed()
-news_feed.subscribe(news_broker)
-
-# a publisher that only publishes sports stories
-sports_publisher = MySportsPublisher()
-sports_publisher.send_story(story, sports_broker)
-
-# a publisher that only publishes politics stories
-politics_publisher = MyPoliticsPublisher()
-
-politics_publisher.send_story(story, politics_broker)
-# news_feed and politics_feed will get the story, but
-# sports_feed will not.
+top_level_broker = get_event_broker("top")
+child_broker = top_level_broker.child("middle")
+grandchild_broker = child_broker.child("bottom")
 ```
+
+A publisher can send data to subscribers via the broker broadcast function:
+
+```python
+broker.broadcast("positional arg", keyword_arg=None)
+```
+
+A subscriber can receive data from publishers by connecting to the broker's
+broadcast_sent event:
+
+```python
+broker.broadcast_sent.connect(subscriber_function)
+```
+
 
 Thread Safety
 -------------

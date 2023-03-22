@@ -1,0 +1,26 @@
+[tool.pdm.dev-dependencies]
+dev = [
+    "black>=23.1.0",
+    "nox>=2022.11.21",
+    "pdm-publish>=0.2.1",
+]
+
+[project]
+name = "observatory"
+version = "0.1.0b1"
+description = "A suite of tools for observable python including Qt-style signal-emitters, events, buses, and pub/sub!"
+authors = [
+    { name = "Ed Whetstone" },
+]
+dependencies = []
+requires-python = ">=3.11"
+readme = "README.md"
+
+[project.license]
+text = "MIT"
+
+[build-system]
+requires = [
+    "pdm-pep517>=1.0",
+]
+build-backend = "pdm.pep517.api"
