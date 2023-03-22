@@ -7,17 +7,37 @@ dev = [
 
 [project]
 name = "observatory"
-version = "0.1.0b1"
-description = "A suite of tools for observable python including Qt-style signal-emitters, events, buses, and pub/sub!"
+version = "0.2.0"
+description = "Observable, event-driven python!"
 authors = [
     { name = "Ed Whetstone" },
 ]
 dependencies = []
 requires-python = ">=3.11"
 readme = "README.md"
+license = { file = "LICENSE" }
+keywords = [
+    "event", "observer", "observability", "observables", "pubsub", "pub-sub",
+    "publish", "subscribe"
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 
-[project.license]
-text = "MIT"
+[project.urls]
+homepage = "https://github.com/sharpencrag/observatory"
+documentation = "https://github.com/sharpencrag/observatory"
+repository = "https://github.com/sharpencrag/observatory"
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=3.2.0",
+]
 
 [build-system]
 requires = [

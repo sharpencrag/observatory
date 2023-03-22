@@ -1,6 +1,6 @@
 from typing import Optional
 
-from .core import EventHook
+from .events import EventHook
 
 
 class ObservableAssignment:
