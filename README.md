@@ -107,11 +107,11 @@ def my_event(asset_name):
 The provided observable data types allow us to connect callbacks to changes to our data.
 
 ### Assignment
-Not strictly a data type itself, the `ObservableAssignment` object emits an event hook every time the given attribute name is assigned a new value.
+Not strictly a data type itself, the `ObservableAttr` object emits an event hook every time the given attribute name is assigned a new value.
 
 ```python
 class X:
-    attr = ObservableAssignment(default=5)
+    attr = ObservableAttr(default=5)
 
 x = X()
 
@@ -137,8 +137,6 @@ def correction(value):
 x.append(5)
 # output: "three, sir!"
 ```
-
-`ObservableDict` and `ObservableList` are both`ObservableAssignment` subclasses, so they can also be used as attributes to watch for reassignment.
 
 ## Publish/Subscribe
 "Publish-subscribe" is a special case of the observer

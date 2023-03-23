@@ -7,7 +7,7 @@ dev = [
 
 [project]
 name = "observatory"
-version = "1.0.1"
+version = "2.0.0"
 description = "Observable, event-driven python!"
 authors = [
     { name = "Ed Whetstone" },
@@ -15,10 +15,15 @@ authors = [
 dependencies = []
 requires-python = ">=3.11"
 readme = "README.md"
-license = { file = "LICENSE" }
 keywords = [
-    "event", "observer", "observability", "observables", "pubsub", "pub-sub",
-    "publish", "subscribe"
+    "event",
+    "observer",
+    "observability",
+    "observables",
+    "pubsub",
+    "pub-sub",
+    "publish",
+    "subscribe",
 ]
 classifiers = [
     "Intended Audience :: Developers",
@@ -28,6 +33,9 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
+[project.license]
+file = "LICENSE"
 
 [project.urls]
 homepage = "https://github.com/sharpencrag/observatory"
