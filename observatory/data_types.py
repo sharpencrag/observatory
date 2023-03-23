@@ -1,9 +1,26 @@
-from typing import Optional
+from typing import (
+    Optional,
+    Self,
+    Type,
+    TypeVar,
+    Generic,
+    Any,
+    overload,
+    Hashable,
+    Callable,
+)
 
 from .events import EventHook
 
 
-class ObservableAssignment:
+T = TypeVar("T")
+
+
+class NotSet:
+    """Sentinel class for indicating that a value has not been set."""
+
+
+class ObservableAttr(Generic[T]):
     """A descriptor that makes an attribute's assignment observable.
 
     When an attribute is assigned to, the observer will be called with the
@@ -11,230 +28,164 @@ class ObservableAssignment:
 
     """
 
-    assigned = EventHook()
+    assigned: EventHook[Any, T] = EventHook()
 
-    def __init__(self, default=None):
+    __slots__ = ("default", "factory")
+
+    def __init__(
+        self, default: Optional[T] = None, factory: Optional[Callable[..., T]] = None
+    ):
+        if not default and not factory:
+            raise ValueError("Either default or factory must be provided.")
+        if default and factory:
+            raise ValueError("Only one of default or factory can be provided.")
         self.default = default
+        self.factory = factory
+
+    @overload
+    def __get__(self, instance: None, cls: Type[Any]) -> Self:
+        ...
+
+    @overload
+    def __get__(self, instance: Any, cls: Type[Any]) -> T:
+        ...
 
     def __get__(self, instance, cls):
-        if cls is not None:
+        if instance is None:
             return self
-        return instance.__dict__.get(self, self.default)
+        instance_value = instance.__dict__.get(self, NotSet)
+        if self.factory and instance_value is NotSet:
+            instance_value = self.factory()
+            instance.__dict__[self] = instance_value
+        elif self.default and instance_value is NotSet:
+            instance_value = self.default
+            instance.__dict__[self] = instance_value
+        return instance_value
 
-    def __set__(self, instance, value):
-        self.assigned.emit(value)
+    def __set__(self, instance, value: T):
+        self.assigned.emit(instance, value)
         instance.__dict__[self] = value
 
 
-class ObservableList(ObservableAssignment):
+class ObservableList(list):
     """Interface to a list that makes operations observable."""
 
-    list_item_set = EventHook()
-    list_item_appended = EventHook()
-    list_extended = EventHook()
-    list_item_inserted = EventHook()
-    list_item_popped = EventHook()
-    list_item_removed = EventHook()
+    list_item_set: EventHook[int, Any] = EventHook()
+    list_item_appended: EventHook[Any] = EventHook()
+    list_extended: EventHook[list[Any]] = EventHook()
+    list_item_inserted: EventHook[int, Any] = EventHook()
+    list_item_popped: EventHook[int, Any] = EventHook()
+    list_item_removed: EventHook[Any] = EventHook()
     list_reversed = EventHook()
     list_sorted = EventHook()
     list_cleared = EventHook()
     list_changed = EventHook()
 
-    def __init__(self, default: Optional[list] = None):
-        ObservableAssignment.__init__(self, default)
-        self.list = default or []
-
     def __hash__(self):
+        # required in order to act as a binding object for event hooks
         return hash(id(self))
 
     def __setitem__(self, index, value):
-        self.list[index] = value
+        super().__setitem__(index, value)
         self.list_item_set.emit(index, value)
         self.list_changed.emit()
 
-    def __getitem__(self, index):
-        return self.list[index]
-
-    def __len__(self):
-        return len(self.list)
-
-    def __iter__(self):
-        return iter(self.list)
-
-    def __reversed__(self):
-        return reversed(self.list)
-
-    def __contains__(self, item):
-        return item in self.list
-
     def append(self, item):
-        self.list.append(item)
+        super().append(item)
         self.list_changed.emit()
         self.list_item_appended.emit(item)
 
     def extend(self, items):
-        self.list.extend(items)
+        super().extend(items)
         self.list_changed.emit()
         self.list_extended.emit(items)
 
     def insert(self, index, item):
-        self.list.insert(index, item)
+        super().insert(index, item)
         self.list_changed.emit()
         self.list_item_inserted.emit(index, item)
 
     def pop(self, index=-1):
-        item = self.list.pop(index)
+        item = super().pop(index)
         self.list_item_popped.emit(index, item)
         self.list_changed.emit()
         return item
 
     def remove(self, item):
-        self.list.remove(item)
+        super().remove(item)
         self.list_item_removed.emit(item)
         self.list_changed.emit()
 
     def reverse(self):
-        self.list.reverse()
+        super().reverse()
         self.list_reversed.emit()
         self.list_changed.emit()
 
     def sort(self, key=None, reverse=False):
-        self.list.sort(key=key, reverse=reverse)
+        super().sort(key=key, reverse=reverse)
         self.list_sorted.emit()
         self.list_changed.emit()
 
     def clear(self):
-        self.list.clear()
+        super().clear()
         self.list_cleared.emit()
         self.list_changed.emit()
 
     def __repr__(self):
-        return f"ObservableList({repr(self.list)})"
+        return f"ObservableList({super().__repr__()})"
 
     def __str__(self):
-        return f"ObservableList({str(self.list)})"
-
-    def __eq__(self, other):
-        return self.list == other
-
-    def __ne__(self, other):
-        return self.list != other
-
-    def __lt__(self, other):
-        return self.list < other
-
-    def __le__(self, other):
-        return self.list <= other
-
-    def __gt__(self, other):
-        return self.list > other
-
-    def __ge__(self, other):
-        return self.list >= other
-
-    def __add__(self, other):
-        return self.list + other
-
-    def __iadd__(self, other):
-        self.list += other
-        return self
-
-    def __mul__(self, other):
-        return self.list * other
-
-    def __imul__(self, other):
-        self.list *= other
-        return self
-
-    def __rmul__(self, other):
-        return other * self.list
+        return f"ObservableList({super().__str__()})"
 
 
-class ObservableDict(ObservableAssignment):
+class ObservableDict(dict):
     """Interface to a dict that makes operations observable."""
 
-    dict_item_set = EventHook()
-    dict_item_deleted = EventHook()
-    dict_item_popped = EventHook()
-    dict_cleared = EventHook()
-    dict_updated = EventHook()
-    dict_changed = EventHook()
-
-    def __init__(self, default: Optional[dict] = None):
-        ObservableAssignment.__init__(self, default)
-        if default:
-            self.dict = dict(default)
-        else:
-            self.dict = {}
+    item_set: EventHook[Hashable, Any] = EventHook()
+    item_popped: EventHook[Hashable, Any] = EventHook()
+    cleared = EventHook()
+    updated: EventHook[dict] = EventHook()
+    changed = EventHook()
 
     def pop(self, key, default=None):
-        value = self.dict.pop(key, default)
-        self.dict_item_popped.emit(key, value)
-        self.dict_changed.emit()
+        value = super().pop(key, default)
+        self.item_popped.emit(key, value)
+        self.changed.emit()
         return value
 
     def popitem(self):
-        key, value = self.dict.popitem()
-        self.dict_item_popped.emit(key, value)
-        self.dict_changed.emit()
+        key, value = super().popitem()
+        self.item_popped.emit(key, value)
+        self.changed.emit()
         return key, value
 
     def setdefault(self, key, default=None):
-        value = self.dict.setdefault(key, default)
-        self.dict_item_set.emit(key, value)
-        self.dict_changed.emit()
+        value = super().setdefault(key, default)
+        self.item_set.emit(key, value)
+        self.changed.emit()
         return value
 
     def clear(self):
-        self.dict.clear()
-        self.dict_cleared.emit()
-        self.dict_changed.emit()
+        super().clear()
+        self.cleared.emit()
+        self.changed.emit()
 
     def update(self, other):
-        self.dict.update(other)
-        self.dict_updated.emit(other)
-        self.dict_changed.emit()
-
-    def copy(self):
-        return self.dict.copy()
-
-    def get(self, key, default=None):
-        return self.dict.get(key, default)
-
-    def items(self):
-        return self.dict.items()
-
-    def keys(self):
-        return self.dict.keys()
+        super().update(other)
+        self.updated.emit(other)
+        self.changed.emit()
 
     def __hash__(self):
+        # required to act as a binding object for event hooks
         return hash(id(self))
 
     def __setitem__(self, key, value):
-        self.dict[key] = value
-        self.dict_item_set.emit(key, value)
-        self.dict_changed.emit()
-
-    def __getitem__(self, key):
-        return self.dict[key]
-
-    def __len__(self):
-        return len(self.dict)
-
-    def __iter__(self):
-        return iter(self.dict)
-
-    def __contains__(self, key):
-        return key in self.dict
+        super().__setitem__(key, value)
+        self.item_set.emit(key, value)
+        self.changed.emit()
 
     def __repr__(self):
-        return f"ObservableDict({repr(self.dict)})"
+        return f"ObservableDict({repr(super())})"
 
     def __str__(self):
-        return f"ObservableDict({str(self.dict)})"
-
-    def __eq__(self, other):
-        return self.dict == other
-
-    def __ne__(self, other):
-        return self.dict != other
+        return f"ObservableDict({str(super())})"
