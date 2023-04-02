@@ -63,10 +63,10 @@ def stop(event_data):
 
 @event()
 def function_one():
-    print("in some_function")
+    print("in function_one")
 
-some_function.about_to_run.connect(start)
-some_function.completed.connect(stop)
+function_one.about_to_run.connect(start)
+function_one.completed.connect(stop)
 
 some_function()
 # output: hello
