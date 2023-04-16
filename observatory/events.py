@@ -1,6 +1,4 @@
-"""
-Implements a version of the observer pattern similar to Qt's signals.
-"""
+"""Implements a version of the observer pattern similar to Qt's signals."""
 import copy
 import enum
 import itertools
@@ -18,6 +16,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    TypeVar,
     TypeVarTuple,
     Union,
 )
@@ -42,12 +41,13 @@ __all__ = [
     "ProgressData",
 ]
 
+T = TypeVar("T", bound=Hashable)
 
 #: typevar for event hooks' emit signatures
 Ts = TypeVarTuple("Ts")
 
 
-class OrderedSet(MutableSet):
+class OrderedSet(MutableSet[T]):
     """Uses an ordered dict to establish the membership of the set.
 
     Original recipe by Raymond Hettinger
@@ -65,13 +65,15 @@ class OrderedSet(MutableSet):
     def __contains__(self, value):
         return value in self._ordered_dict
 
-    def add(self, value: Any):
+    def add(self, value: T):
+        """Add a value to the set."""
         self._ordered_dict[value] = None
 
-    def discard(self, value: Any):
+    def discard(self, value: T):
+        """Remove a value from the set."""
         self._ordered_dict.pop(value, None)
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> T:
         return tuple(self)[index]
 
     def __repr__(self):
@@ -91,6 +93,7 @@ class EventHook(Generic[*Ts]):
             name (Optional, str): An optional name for the event hook.  The
                 name will appear in the __repr__ for instances of this class,
                 making debugging easier.
+
         """
         super().__init__()
 
@@ -175,7 +178,7 @@ class EventHook(Generic[*Ts]):
                 raise EventHookError(f"Error in event hook: {self!r}")
 
     def _as_bound_to(self, obj):
-        """returns a new event hook instance bound to obj."""
+        """Returns a new event hook instance bound to obj."""
         inst = type(self)()
         inst.observers = OrderedSet(self.observers)
         inst._bound_to = obj
