@@ -17,7 +17,7 @@ def say_hello(x):                # <-- function to call when events occur
 
 an_event_hook = EventHook()     # <-- event hook as a standalone object
 
-an_event_hook.connect(print_it) # <-- add observer
+an_event_hook.connect(say_hello) # <-- add observer
 
 event_triggered.emit("events")  # <-- emit event hook
 
