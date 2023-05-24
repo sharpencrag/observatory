@@ -15,11 +15,11 @@ invoked when the EventHook is emitted (with or without arguments):
 def say_hello(x):                # <-- function to call when events occur
     print(f"hello {x}")
 
-an_event_hook = EventHook()     # <-- event hook as a standalone object
+an_event_hook = EventHook()      # <-- event hook as a standalone object
 
 an_event_hook.connect(say_hello) # <-- add observer
 
-event_triggered.emit("events")  # <-- emit event hook
+an_event_hook.emit("events")     # <-- emit event hook
 
 # output: hello events
 ```
@@ -43,9 +43,12 @@ an_event_hook: EventHook[str] = EventHook()
 ```
 
 This should give static type checkers a good clue when emitting from and
-connecting to the event hook. Type hinting only supports positional arguments
-currently -- static type checking may break if you need to emit keyword
-arguments directly to observers.
+connecting to the event hook.
+
+> **Warning**
+> Type hinting only supports positional arguments
+> currently -- static type checking may break if you need to emit keyword
+> arguments directly to observers.
 
 ## Events
 
