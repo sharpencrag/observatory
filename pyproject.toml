@@ -1,19 +1,15 @@
-[tool.pdm.dev-dependencies]
-dev = [
-    "black>=23.1.0",
-    "nox>=2022.11.21",
-    "pdm-publish>=0.2.1",
-]
-
 [project]
 name = "observatory"
-version = "2.0.0"
-description = "Observable, event-driven python!"
+version = "0.3.0"
+description = "Observable python!"
 authors = [
     { name = "Ed Whetstone" },
+    {name = "sharpencrag", email = "ed.whetstone@gmail.com"},
 ]
-dependencies = []
-requires-python = ">=3.11"
+dependencies = [
+    "typing-extensions>=4.7.1",
+]
+requires-python = ">=3.7"
 readme = "README.md"
 keywords = [
     "event",
@@ -36,19 +32,16 @@ classifiers = [
 
 [project.license]
 file = "LICENSE"
-
 [project.urls]
 homepage = "https://github.com/sharpencrag/observatory"
 documentation = "https://github.com/sharpencrag/observatory#readme"
 repository = "https://github.com/sharpencrag/observatory"
 
-[project.optional-dependencies]
-dev = [
-    "pre-commit>=3.2.0",
-]
-
 [build-system]
-requires = [
-    "pdm-pep517>=1.0",
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "black>=23.3.0",
 ]
-build-backend = "pdm.pep517.api"

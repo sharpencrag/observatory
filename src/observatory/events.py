@@ -4,22 +4,11 @@ import enum
 import itertools
 import traceback
 from collections import OrderedDict, defaultdict
-from collections.abc import MutableSet
+from functools import wraps
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    Hashable,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    TypeVarTuple,
-    Union,
-)
+import typing as t
+import typing_extensions as te
 
 
 from observatory import thread_safe
@@ -41,13 +30,13 @@ __all__ = [
     "ProgressData",
 ]
 
-T = TypeVar("T", bound=Hashable)
+T = t.TypeVar("T", bound=t.Hashable)
 
 #: typevar for event hooks' emit signatures
-Ts = TypeVarTuple("Ts")
+Ts = te.TypeVarTuple("Ts")
 
 
-class OrderedSet(MutableSet[T]):
+class OrderedSet(te.MutableSet[T]):
     """Uses an ordered dict to establish the membership of the set.
 
     Original recipe by Raymond Hettinger
@@ -82,12 +71,12 @@ class OrderedSet(MutableSet[T]):
         )
 
 
-class EventHook(Generic[*Ts]):
+class EventHook(t.Generic[te.Unpack[Ts]]):
     """EventHooks implement a signal/slot or "emitter" style observer pattern."""
 
     __slots__ = ["name", "observers", "_bound_to", "_paused", "_bound_instances"]
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(self, name: t.Optional[str] = None):
         """
         Args:
             name (Optional, str): An optional name for the event hook.  The
@@ -105,7 +94,7 @@ class EventHook(Generic[*Ts]):
         # An object that this event hook is bound to.  This allows event hooks
         # to behave like methods, and be bound to a particular instance, or
         # classmethods, and be bound to a particular class.
-        self._bound_to: object = None
+        self._bound_to: t.Any = None
 
         # If True, the event hook will not trigger.
         self._paused = False
@@ -115,7 +104,7 @@ class EventHook(Generic[*Ts]):
         self._bound_instances = dict()
 
     @thread_safe.locks()
-    def connect(self, observer: Callable[[*Ts], Any]):
+    def connect(self, observer: t.Callable[[te.Unpack[Ts]], t.Any]):
         """Connects the callable to the event hook.
 
         Multiple callables can be connected to a single event hook.
@@ -126,7 +115,7 @@ class EventHook(Generic[*Ts]):
         self.observers.add(observer)
 
     @thread_safe.locks()
-    def disconnect(self, observer: Callable):
+    def disconnect(self, observer: t.Callable):
         """Disconnects an observer from this event hook.
 
         Args:
@@ -161,7 +150,7 @@ class EventHook(Generic[*Ts]):
         self._paused = False
 
     @thread_safe.locks()
-    def emit(self, *args: *Ts, **kwargs: Any):
+    def emit(self, *args: te.Unpack[Ts], **kwargs: t.Any):
         """Calls every observer connected to this event hook.
 
         All provided arguments are passed directly to the observers.
@@ -207,12 +196,12 @@ class EventHook(Generic[*Ts]):
             )
         return super(EventHook, self).__repr__()
 
-    def __call__(self, *args: *Ts, **kwargs):
+    def __call__(self, *args: te.Unpack[Ts], **kwargs):
         """Alias to self.emit()"""
         self.emit(*args, **kwargs)
 
 
-def observes(when: Union[EventHook, "EventStatus"]):
+def observes(when: t.Union[EventHook, "EventStatus"]):
     """Decorator that connects a callable to an event hook.
 
     Args:
@@ -238,12 +227,12 @@ def observes(when: Union[EventHook, "EventStatus"]):
 
 
 class EventStatus(enum.Enum):
-    NEVER_RUN = 0
-    ABOUT_TO_RUN = 1
-    PROGRESS_UPDATED = 2
-    COMPLETED = 3
-    CRASHED = 4
-    EXITED = 5
+    NEVER_RUN = enum.auto()
+    ABOUT_TO_RUN = enum.auto()
+    PROGRESS_UPDATED = enum.auto()
+    COMPLETED = enum.auto()
+    CRASHED = enum.auto()
+    EXITED = enum.auto()
 
 
 @dataclass
@@ -260,16 +249,16 @@ class EventData:
     name: str
 
     #: the wrapped function or method used as an event
-    action: Callable
+    action: t.Callable
 
     #: the arguments passed into the action
-    args: Tuple
+    args: t.Tuple
 
     #: the keyword arguments passed into the action
-    kwargs: Dict
+    kwargs: t.Dict
 
     #: arbitrary extra information about the event
-    extra: Dict
+    extra: t.Dict
 
     #: whether the event should be handled independently
     elevated: bool
@@ -287,10 +276,10 @@ class EventData:
     exc_trace: str = ""
 
     #: string tags for the event.
-    tags: Dict[str, str] = field(default_factory=dict)
+    tags: t.Dict[str, str] = field(default_factory=dict)
 
     #: the result of the action
-    result: Any = None
+    result: t.Any = None
 
     #: the current status of the event
     status: EventStatus = EventStatus.NEVER_RUN
@@ -301,16 +290,17 @@ class EventData:
 
 @dataclass
 class ProgressData:
-    """A dataclass containing information about a progress update.
+    """Information about a progress update.
 
     A ProgressData instance will be passed to all progress event callbacks.
     """
 
-    event: "Event"  # the event currently being evaluated
-    name: Optional[str]  # the name of the progression
-    completion: int  # a percentage value between 0 and 100
-    item: Any  # the object currently being iterated over
+    event: "Event"  # The event currently being evaluated
+    iteration: int # The current iteration number
+    length: int # the length of the full iterable
+    current_item: t.Any  # The object currently being iterated over
     status: EventStatus = EventStatus.PROGRESS_UPDATED
+    name: t.Optional[str] = None  # The name of the iterable being processed
 
     def __post_init__(self):
         if self.name is None:
@@ -340,13 +330,13 @@ class Event:
     progress_updated: EventHook[ProgressData] = EventHook()
 
     # for internal use, emitted when tags are updated on the event
-    _tags_updated: EventHook[Hashable, Any] = EventHook()
+    _tags_updated: EventHook[t.Hashable, t.Any] = EventHook()
 
     def __init__(
         self,
         action,
         description="",
-        extra: Optional[Dict[str, Any]] = None,
+        extra: t.Optional[t.Dict[str, t.Any]] = None,
         elevate=False,
     ):
         """
@@ -388,7 +378,7 @@ class Event:
         # the class when accessed
         self._is_classmethod = False
 
-    def track(self, sequence: Sequence[Any], name: Optional[str] = None):
+    def track(self, sequence: t.Sequence[t.Any], name: t.Optional[str] = None):
         """Yields a generator that emits progress updates in an event.
 
         The progress updates are emitted as a ProgressData object, which
@@ -411,11 +401,8 @@ class Event:
 
         """
         len_of_iterable = len(sequence)
-        progress_data = ProgressData(event=self, completion=0, item=None, name=name)
         for i, item in enumerate(sequence):
-            percent = int(((i + 1) / len_of_iterable) * 100)
-            progress_data.item = item
-            progress_data.completion = percent
+            progress_data = ProgressData(self, i, len_of_iterable, item, name=name)
             _run_global_callbacks(progress_data)
             self.progress_updated.emit(progress_data)
             yield item
@@ -454,7 +441,7 @@ class Event:
             self._bound_instances[binding_obj] = bound_instance
             return bound_instance
 
-    def __setitem__(self, tag: Hashable, value: Any):
+    def __setitem__(self, tag: t.Hashable, value: t.Any):
         self._tags_updated.emit(tag, value)
 
     def __call__(self, *args, **kwargs):
@@ -526,7 +513,7 @@ class ProgressTracker:
 
     updated = EventHook()
 
-    def tracked(self, iterable, name: Optional[str] = None):
+    def tracked(self, iterable, name: t.Optional[str] = None):
         """Yields a generator that emits progress updates as it iterates.
 
         The progress updates are emitted as a ProgressData object, which
@@ -540,7 +527,7 @@ class ProgressTracker:
             yield item
 
 
-def event(description: str = "", extra: Optional[Dict[str, Any]] = None, elevate=False):
+def event(description: str = "", extra: t.Optional[t.Dict[str, t.Any]] = None, elevate=False):
     """DECORATOR: convert the decorated function or method into an Event.
 
     Args:
@@ -618,7 +605,7 @@ _global_event_callbacks = defaultdict(list)
 
 @thread_safe.locks()
 def add_global_event_callback(
-    status: EventStatus, callback: Callable[[EventData], Any]
+    status: EventStatus, callback: t.Callable[[EventData], t.Any]
 ):
     """Adds a callback that runs when a status hook is triggered by ANY event.
 
@@ -644,14 +631,15 @@ def clear_global_event_callbacks(status):
     """
     _global_event_callbacks[status][:] = []
 
+def _run_global_callbacks(event_data: t.Union[EventData, ProgressData]):
+    """Runs the global callbacks for the status hook of the given event data.
 
-def _run_global_callbacks(event_data: Union[EventData, ProgressData]):
-    """Runs the global callbacks for the state hook of the given event data"""
+    For example, if the event_data.status is EventStatus.COMPLETED, then all
+    callbacks registered for EventStatus.COMPLETED will be run.
+    """
     for callback in _global_event_callbacks[event_data.status]:
         callback(event_data)
 
 
 class EventHookError(Exception):
     """Raised when an event hook or attached observer raises an exception."""
-
-    pass

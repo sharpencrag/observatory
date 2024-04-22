@@ -3,7 +3,7 @@ Simple implementation of a publish-subscribe event system.
 """
 
 from collections import deque
-from typing import Dict, Hashable, Optional
+import typing as t
 
 from functools import lru_cache, wraps
 
@@ -12,8 +12,9 @@ from observatory import events as events
 __all__ = ["event_broker", "EventBroker"]
 
 
-def ancestors(child):
-    """Helper utility to get a list of all ancestors of a given object."""
+
+def ancestors(child: "EventBroker"):
+    """Helper utility to get a list of all ancestors of an event broker"""
     parent = child.parent
     ancestors_ = list()
     while parent is not None:
@@ -22,13 +23,13 @@ def ancestors(child):
     return ancestors_
 
 
-@lru_cache
-def _get_broker_dict() -> Dict[Hashable, "EventBroker"]:
+@lru_cache()
+def _get_broker_dict() -> t.Dict[t.Hashable, "EventBroker"]:
     """Returns a common dictionary used for storing top-level event brokers"""
     return dict()
 
 
-def event_broker(topic: Hashable, parent: Optional["EventBroker"] = None):
+def event_broker(topic: t.Hashable, parent: t.Optional["EventBroker"] = None):
     """Gets or creates a new EventBroker instance for the given topic.
 
     This function is the preferred way to obtain an EventBroker.
@@ -76,7 +77,7 @@ class EventBroker:
 
     broadcast_sent = events.EventHook()
 
-    def __init__(self, topic: Hashable, parent=None):
+    def __init__(self, topic: t.Hashable, parent=None):
         self.topic = topic
         self.queue = deque()
         self.child_dict = dict()
@@ -162,7 +163,7 @@ class EventBroker:
         name_chain = [self] + ancestors(self)
         return "|".join([str(item.topic) for item in reversed(name_chain)])
 
-    def subscribes(self, topic: Optional[Hashable] = None):
+    def subscribes(self, topic: t.Optional[t.Hashable] = None):
         """Decorator for subscribing a function to an event broker."""
 
         def decorator(func):
@@ -174,7 +175,7 @@ class EventBroker:
 
         return decorator
 
-    def publishes(self, topic: Optional[Hashable] = None):
+    def publishes(self, topic: t.Optional[t.Hashable] = None):
         """Decorator for publishing an event hook to an event broker."""
         publish = events.EventHook()
         if topic is None:

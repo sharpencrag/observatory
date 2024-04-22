@@ -1,41 +1,27 @@
-from typing import (
-    Optional,
-    Self,
-    Type,
-    TypeVar,
-    Generic,
-    Any,
-    overload,
-    Hashable,
-    Callable,
-    Iterable,
-    Protocol,
-    Mapping
-)
-
+from __future__ import annotations
+import typing as t
+import typing_extensions as te
 from .events import EventHook
 
 
-T = TypeVar("T")
+T = t.TypeVar("T")
 
-K = TypeVar("K", bound=Hashable)
+K = t.TypeVar("K", bound=t.Hashable)
 
 
-class Sortable(Protocol):
+class Sortable(te.Protocol):
     """Protocol for defining sortable objects."""
 
-    def __gt__(self, other: Any) -> bool:
-        ...
+    def __gt__(self, other: t.Any) -> bool: ...
 
-    def __lt__(self, other: Any) -> bool:
-        ...
+    def __lt__(self, other: t.Any) -> bool: ...
 
 
 class NotSet:
     """Sentinel class for indicating that a value has not been set."""
 
 
-class ObservableAttr(Generic[T]):
+class ObservableAttr(t.Generic[T]):
     """A descriptor that makes an attribute's assignment observable.
 
     When an attribute is assigned to, the observer will be called with the
@@ -43,12 +29,14 @@ class ObservableAttr(Generic[T]):
 
     """
 
-    assigned: EventHook[Any, T] = EventHook()
+    assigned: EventHook[t.Any, T] = EventHook()
 
     __slots__ = ("default", "factory")
 
     def __init__(
-        self, default: Optional[T] = None, factory: Optional[Callable[..., T]] = None
+        self,
+        default: t.Optional[T] = None,
+        factory: t.Optional[t.Callable[..., T]] = None,
     ):
         if not default and not factory:
             raise ValueError("Either default or factory must be provided.")
@@ -57,13 +45,11 @@ class ObservableAttr(Generic[T]):
         self.default = default
         self.factory = factory
 
-    @overload
-    def __get__(self, instance: None, cls: Type[Any]) -> Self:
-        ...
+    @t.overload
+    def __get__(self, instance: None, cls: t.Type[t.Any]) -> te.Self: ...
 
-    @overload
-    def __get__(self, instance: Any, cls: Type[Any]) -> T:
-        ...
+    @t.overload
+    def __get__(self, instance: t.Any, cls: t.Type[t.Any]) -> T: ...
 
     def __get__(self, instance, cls):
         if instance is None:
@@ -82,7 +68,7 @@ class ObservableAttr(Generic[T]):
         instance.__dict__[self] = value
 
 
-class ObservableList(list[T]):
+class ObservableList(t.List[T]):
     """Interface to a list that makes operations observable."""
 
     list_item_set: EventHook[int, T] = EventHook()
@@ -111,7 +97,7 @@ class ObservableList(list[T]):
         self.list_changed.emit()
         self.list_item_appended.emit(item)
 
-    def extend(self, items: Iterable[T]):
+    def extend(self, items: t.Iterable[T]):
         """Extend the list in-place."""
         items = list(items)
         super().extend(items)
@@ -124,7 +110,7 @@ class ObservableList(list[T]):
         self.list_changed.emit()
         self.list_item_inserted.emit(index, item)
 
-    def pop(self, index: int=-1) -> T:
+    def pop(self, index: int = -1) -> T:
         """Remove and return the item at the given index."""
         item = super().pop(index)
         self.list_item_popped.emit(index, item)
@@ -143,7 +129,7 @@ class ObservableList(list[T]):
         self.list_reversed.emit()
         self.list_changed.emit()
 
-    def sort(self, key: Optional[Callable[[T], Sortable]]=None, reverse=False):
+    def sort(self, key: t.Optional[t.Callable[[T], Sortable]] = None, reverse=False):
         """Sort the list in-place."""
         super().sort(key=key, reverse=reverse)  # type: ignore (typeshed bug)
         self.list_sorted.emit()
@@ -162,11 +148,11 @@ class ObservableList(list[T]):
         return f"ObservableList({super().__str__()})"
 
 
-class ObservableDict(dict[K, T]):
+class ObservableDict(t.Dict[K, T]):
     """Interface to a dict that makes operations observable."""
 
     item_set: EventHook[K, T] = EventHook()
-    item_popped: EventHook[tuple[K, T | None]] = EventHook()
+    item_popped: EventHook[tuple[K, T] | None] = EventHook()
     cleared = EventHook()
     updated: EventHook[dict[K, T]] = EventHook()
     changed = EventHook()
@@ -177,7 +163,10 @@ class ObservableDict(dict[K, T]):
         If the key is not found, return the default value.
         """
         value = super().pop(key, default)
-        self.item_popped.emit((key, value))
+        if value is None:
+            self.item_popped.emit(value)
+        else:
+            self.item_popped.emit((key, value))
         self.changed.emit()
         return value
 
@@ -201,7 +190,7 @@ class ObservableDict(dict[K, T]):
         self.cleared.emit()
         self.changed.emit()
 
-    def update(self, other: Mapping[K, T]):
+    def update(self, other: t.Mapping[K, T]):
         """Update the dict in-place with the given mapping."""
         super().update(other)
         self.updated.emit(dict(other))

@@ -39,7 +39,7 @@ class EventHookTests(unittest.TestCase):
 
     def test_connect_callable_object_to_event_hook(self):
         class CallableObject:
-            def __call__(self_):
+            def __call__(self_):  # type: ignore
                 self.result = "callable_object"
 
         self.event_hook.connect(CallableObject())
@@ -385,20 +385,20 @@ class TestGlobalEventCallbacks(unittest.TestCase):
             "exited_b_event",
         ]
 
-        def about_to_run(data):
+        def about_to_run(data: events.EventData):
             results.append("about_to_run_{}".format(data.name))
 
-        def completed(data):
+        def completed(data: events.EventData):
             results.append("completed_{}".format(data.name))
 
-        def crashed(data):
+        def crashed(data: events.EventData):
             results.append("crashed_{}".format(data.name))
 
-        def exited(data):
+        def exited(data: events.EventData):
             results.append("exited_{}".format(data.name))
 
-        def progress_updated(data):
-            results.append("progress_{}".format(data.item))
+        def progress_updated(data: events.ProgressData):
+            results.append("progress_{}".format(data.current_item))
 
         @events.event()
         def a_event():
@@ -475,7 +475,7 @@ class TestGlobalEventCallbacks(unittest.TestCase):
 
         @events.observes(events.EventStatus.PROGRESS_UPDATED)
         def progress_updated(data):
-            results.append("progress_{}".format(data.item))
+            results.append("progress_{}".format(data.current_item))
 
         self.assertFalse(results)
 
@@ -604,13 +604,13 @@ class TestGlobalEventCallbacks(unittest.TestCase):
 class TestEventProgress(unittest.TestCase):
     def test_function_decorated_event_progress(self):
         results = list()
-        expected = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+        expected = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-        def handle_progress_update(progress_data):
+        def handle_progress_update(progress_data: events.ProgressData):
             self.assertIsInstance(progress_data.event, events.Event)
-            self.assertIsInstance(progress_data.item, int)
+            self.assertIsInstance(progress_data.current_item, int)
             self.assertEqual(progress_data.name, "test")
-            results.append(progress_data.completion)
+            results.append(progress_data.iteration)
 
         @events.event()
         def an_event():
@@ -627,13 +627,13 @@ class TestEventProgress(unittest.TestCase):
 
     def test_method_decorated_event_progress(self):
         results = list()
-        expected = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+        expected = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-        def handle_progress_update(progress_data):
+        def handle_progress_update(progress_data: events.ProgressData):
             self.assertIsInstance(progress_data.event, events.Event)
-            self.assertIsInstance(progress_data.item, int)
+            self.assertIsInstance(progress_data.current_item, int)
             self.assertEqual(progress_data.name, "test")
-            results.append(progress_data.completion)
+            results.append(progress_data.iteration)
 
         class EventClass:
             @events.event()

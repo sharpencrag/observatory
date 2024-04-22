@@ -123,6 +123,7 @@ class TestObservableList(unittest.TestCase):
         # list_item_popped
         obs_list.list_item_popped.connect(self._set_result)
         obs_list.list_item_appended.disconnect(self._set_result)
+
         # sanity check
         obs_list.append(7)
         self.assertEqual(self.result, expected)
@@ -191,13 +192,13 @@ class TestObservableDict(unittest.TestCase):
 
         # dict_item_popped
         obs_dict.item_popped.connect(self._set_result)
-        expected = ("c", 3)
+        expected = (("c", 3),)
         obs_dict.pop("c")
         self.assertEqual(self.result, expected)
 
         # dict_item_popitem
         # the popped item will be the last item in the dict
-        expected = ("d", "danger")
+        expected = (("d", "danger"),)
         obs_dict.popitem()
         self.assertEqual(self.result, expected)
 
